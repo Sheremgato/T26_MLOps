@@ -1,0 +1,3 @@
+# Образец данных хранится байт в байт: Git не меняет окончания строк при checkout
+# (например, core.autocrlf=true на Windows), иначе SHA-256 не совпадет с data/README.md.
+data/housing_sample.csv -text
