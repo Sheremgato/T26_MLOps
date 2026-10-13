@@ -137,17 +137,18 @@ Actions → нужный запуск → Artifacts → `validation-report`.
 Команды выполняются в активированном окружении `.venv`: DVC устанавливается вместе с `.[dev]`,
 а стадии запускают `python` из этого окружения.
 
-**1. Полный набор.** В Git хранится только `data/raw/housing.csv.dvc` — контрольная сумма файла.
-Удаленного хранилища DVC нет: источник публичный, файл скачивается одной командой.
+**1. Полный набор.** В Git хранится только `data/raw/housing.csv.dvc`: ссылка на источник
+и контрольная сумма файла (`dvc import-url`). Удаленного хранилища DVC нет — источник публичный,
+и DVC сам скачивает файл по ссылке:
 
 ```bash
-mkdir -p data/raw
-python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/ageron/handson-ml2/aa555aa16b9d0af6c84e67c7757f3317d05acb12/datasets/housing/housing.csv', 'data/raw/housing.csv')"
-dvc status data/raw/housing.csv.dvc
+dvc update data/raw/housing.csv.dvc
+git diff --exit-code data/raw/housing.csv.dvc
 ```
 
-В PowerShell каталог создается командой `New-Item -ItemType Directory -Force data/raw`.
-Если `dvc status` пишет `modified: data/raw/housing.csv`, скачан не тот файл — дальше не продолжайте.
+Если источник изменился, `dvc update` перепишет контрольную сумму в `.dvc`-файле, и `git diff`
+покажет это (код `1`) — тогда дальше не продолжайте. Предупреждение `stage ... is frozen` ожидаемо:
+стадия импорта заморожена, поэтому `dvc repro` не скачивает файл заново.
 
 **2. Запуск и проверка.**
 
