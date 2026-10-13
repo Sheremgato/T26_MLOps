@@ -1,0 +1,23 @@
+schema: '2.0'
+stages:
+  validate:
+    cmd: python -m housing_price.validate_data --data data/raw/housing.csv 
+      --contract data/contract.json --report reports/validation/raw.json
+    deps:
+    - path: data/contract.json
+      hash: md5
+      md5: 7ed346813e983e380c704a3b3bcf36dd
+      size: 4016
+    - path: data/raw/housing.csv
+      hash: md5
+      md5: d1c47305887e2252bf1ccbd74ff159a6
+      size: 1423529
+    - path: src/housing_price/validate_data.py
+      hash: md5
+      md5: 81b43f4da64329384edf0a6be96a99fc
+      size: 12372
+    outs:
+    - path: reports/validation/raw.json
+      hash: md5
+      md5: de852648c450abf395abb85f807fa56e
+      size: 5106
