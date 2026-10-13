@@ -132,6 +132,51 @@ python -m housing_price.validate_data --data data/housing_sample.csv --contract 
 Отчет лежит в `reports/validation/lr2.json` и в Git не коммитится. В CI он сохраняется артефактом:
 Actions → нужный запуск → Artifacts → `validation-report`.
 
+## Пайплайн данных (DVC)
+
+Команды выполняются в активированном окружении `.venv`: DVC устанавливается вместе с `.[dev]`,
+а стадии запускают `python` из этого окружения.
+
+**1. Полный набор.** В Git хранится только `data/raw/housing.csv.dvc` — контрольная сумма файла.
+Удаленного хранилища DVC нет: источник публичный, файл скачивается одной командой.
+
+```bash
+mkdir -p data/raw
+python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/ageron/handson-ml2/aa555aa16b9d0af6c84e67c7757f3317d05acb12/datasets/housing/housing.csv', 'data/raw/housing.csv')"
+dvc status data/raw/housing.csv.dvc
+```
+
+В PowerShell каталог создается командой `New-Item -ItemType Directory -Force data/raw`.
+Если `dvc status` пишет `modified: data/raw/housing.csv`, скачан не тот файл — дальше не продолжайте.
+
+**2. Запуск и проверка.**
+
+```bash
+dvc repro
+dvc dag
+dvc status
+dvc params show
+```
+
+`dvc repro` выполняет только стадии, у которых изменились зависимости или параметры.
+После запуска `dvc status` должен ответить `Data and pipelines are up to date.`
+
+| Стадия | Что делает | Результат | Владелец |
+|---|---|---|---|
+| `validate` | проверяет полный набор контрактом `data/contract.json`; при нарушении `dvc repro` останавливается | `reports/validation/raw.json` | @haiksarg |
+| `split` | стратифицированное разделение train/test (`params.yaml` → `split`) | `data/split/` | @Sheremgato |
+| `preprocess` | заполнение пропусков, кодирование, масштабирование — обучаются только на train | `data/processed/`, `models/` | @icy07 |
+
+Разделение выполняется **до** предобработки: так статистики масштабирования и словарь категорий
+вычисляются только по train и не «подсматривают» в test (`docs/data-card.md`, раздел 8).
+
+**3. Изменение параметров.** Измените значение в `params.yaml` (например, `split.test_size`):
+`dvc status` покажет затронутые стадии, `dvc repro` перезапустит только их,
+`dvc params diff` сравнит параметры с зафиксированными в `dvc.lock`.
+
+Результаты стадий (`reports/`, `data/split/`, `data/processed/`, `models/`) в Git не коммитятся:
+их воспроизводит `dvc repro`, а `dvc.lock` фиксирует контрольные суммы входов и выходов.
+
 ## Документация
 
 - [CONTRIBUTING.md](CONTRIBUTING.md)
