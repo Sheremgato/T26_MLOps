@@ -9,7 +9,7 @@
 - `tests/` — тесты pytest.
 - `data/` — локальные данные, в Git не коммитятся (см. `data/README.md`).
 - `docs/` — документация команды.
-- `.github/workflows/ci.yml` — CI: Ruff и pytest и smoke-запуск `python -m housing_price`.
+- `.github/workflows/ci.yml` — CI: проверка данных, Ruff, pytest и smoke-запуск `python -m housing_price`.
 
 ## Требования
 
@@ -96,6 +96,41 @@ housing-price 0.1.0
 | Описание без изменения проверки | patch: `1.0.0 → 1.0.1` | уточнен текст `description` |
 | Совместимое добавление необязательного поля | minor: `1.0.0 → 1.1.0` | новый столбец с `"nullable": true` |
 | Удаление или переименование поля, изменение типа, смысла или диапазона | major: `1.0.0 → 2.0.0` | `median_house_value` перестал обрезаться на 500001 |
+
+## Проверка данных
+
+Валидатор `src/housing_price/validate_data.py` проверяет CSV по контракту `data/contract.json`
+и записывает JSON-отчет с версией контракта, SHA-256 файла, числом строк и результатом каждого правила.
+
+Bash (Linux, macOS):
+
+```bash
+python -m housing_price.validate_data --data data/housing_sample.csv --contract data/contract.json --report reports/validation/lr2.json
+echo $?
+```
+
+PowerShell (одной строкой):
+
+```powershell
+python -m housing_price.validate_data --data data/housing_sample.csv --contract data/contract.json --report reports/validation/lr2.json; echo $LASTEXITCODE
+```
+
+Коды завершения:
+
+| Код | Значение |
+|---|---|
+| 0 | все проверки пройдены, в отчете `"passed": true` |
+| 1 | нарушение данных: отчет записан с `"passed": false`, неуспешные правила выведены в stderr |
+| 2 | ошибка запуска: нет файла, поврежденный JSON, в контракте нет `contract_version`, `dataset` или `columns` |
+
+Ожидаемый вывод для образца (код 0):
+
+```text
+проверка пройдена: правил: 33, sha256=e11e3d0baa7263ed5e5407f5f3ad5c398b07c49d739bc816953fa958bee146f0
+```
+
+Отчет лежит в `reports/validation/lr2.json` и в Git не коммитится. В CI он сохраняется артефактом:
+Actions → нужный запуск → Artifacts → `validation-report`.
 
 ## Документация
 
