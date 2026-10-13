@@ -27,3 +27,26 @@ jobs:
       - run: python -m ruff check .
       - run: python -m pytest -q
       - run: python -m housing_price
+
+  # Пайплайн DVC с нуля: скачать полный набор, сверить его с data/raw/housing.csv.dvc, выполнить dvc repro.
+  pipeline:
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: mkdir -p data/raw
+      - run: python -c "import urllib.request; urllib.request.urlretrieve('https://raw.githubusercontent.com/ageron/handson-ml2/aa555aa16b9d0af6c84e67c7757f3317d05acb12/datasets/housing/housing.csv', 'data/raw/housing.csv')"
+      - run: dvc status --quiet data/raw/housing.csv.dvc
+      - run: dvc repro
+      - run: dvc dag
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pipeline-reports
+          path: reports/
